@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { spawn } from "child_process";
 import { RawPair } from "./types";
 import { HTMLGenerator } from "./html-generator";
@@ -51,12 +52,41 @@ export class ClaudeTrafficLogger {
 		console.log(`  HTML:  ${this.htmlFile}`);
 	}
 
+	private readClaudeSettings(): { env?: { ANTHROPIC_BASE_URL?: string } } | null {
+		try {
+			const settingsPath = path.join(os.homedir(), ".claude", "settings.json");
+			if (fs.existsSync(settingsPath)) {
+				const settingsContent = fs.readFileSync(settingsPath, "utf8");
+				return JSON.parse(settingsContent);
+			}
+		} catch (error) {
+			// Silent error handling - settings file might be malformed
+		}
+		return null;
+	}
+
+	private getAnthropicBaseUrl(): string {
+		// First try to read from settings.json
+		const settings = this.readClaudeSettings();
+		if (settings?.env?.ANTHROPIC_BASE_URL) {
+			return settings.env.ANTHROPIC_BASE_URL;
+		}
+
+		// Fallback to environment variable
+		if (process.env.ANTHROPIC_BASE_URL) {
+			return process.env.ANTHROPIC_BASE_URL;
+		}
+
+		// Default to api.anthropic.com
+		return "https://api.anthropic.com";
+	}
+
 	private isAnthropicAPI(url: string | URL): boolean {
 		const urlString = typeof url === "string" ? url : url.toString();
 		const includeAllRequests = process.env.CLAUDE_TRACE_INCLUDE_ALL_REQUESTS === "true";
 
-		// Support custom ANTHROPIC_BASE_URL
-      		const baseUrl = process.env.ANTHROPIC_BASE_URL || "https://api.anthropic.com";
+		// Get base URL from settings, env, or default
+      		const baseUrl = this.getAnthropicBaseUrl();
       		const apiHost = new URL(baseUrl).hostname;
 		
 		if (includeAllRequests) {

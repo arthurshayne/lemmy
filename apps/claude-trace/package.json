@@ -1,6 +1,6 @@
 {
-	"name": "@mariozechner/claude-trace",
-	"version": "1.0.3",
+	"name": "custom-claude-trace",
+	"version": "1.0.4",
 	"description": "Record all your interactions with Claude Code as you develop your projects",
 	"main": "dist/index.js",
 	"bin": {
@@ -38,7 +38,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/mariozechner/claude-trace.git"
+		"url": "https://github.com/arthurshayne/lemmy/tree/main/apps/claude-trace"
 	},
 	"engines": {
 		"node": ">=16.0.0"
@@ -46,6 +46,7 @@
 	"devDependencies": {
 		"@types/node": "^20.0.0",
 		"concurrently": "^9.1.2",
+		"husky": "^9.1.7",
 		"typescript": "^5.0.0"
 	},
 	"dependencies": {

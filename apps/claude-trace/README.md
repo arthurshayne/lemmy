@@ -1,11 +1,16 @@
 # claude-trace
 
+Original version only capture api.anthropic.com. This version read ~/.claude/settings.josn, then read environment, then api.anthropic.com.
 Record all your interactions with Claude Code as you develop your projects. See everything Claude hides: system prompts, tool outputs, and raw API data in an intuitive web interface.
 
 ## Install
 
 ```bash
-npm install -g @mariozechner/claude-trace
+# if you installed original version, uninstall it first
+npm uninstall -g @mariozechner/claude-trace
+
+# install custom version
+npm install -g custom-claude-trace
 ```
 
 ## Usage
