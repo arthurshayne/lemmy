@@ -152,15 +152,45 @@ function getClaudeAbsolutePath(): string {
 			claudePath = aliasMatch[1];
 		}
 		
-		// Check if the path is a bash wrapper
+		// Convert gitbash/MSYS2 paths to Windows paths on Windows
+		if (process.platform === 'win32' && claudePath.startsWith('/')) {
+			try {
+				claudePath = require("child_process")
+					.execSync(`cygpath -w "${claudePath}"`, {
+						encoding: "utf-8",
+					})
+					.trim();
+			} catch (cygpathError) {
+				// If cygpath fails, try manual conversion for common patterns
+				claudePath = claudePath.replace(/^\/([a-z])\//i, '$1:\\').replace(/\//g, '\\');
+			}
+		}
+		
+		// Check if the path is a shell wrapper (bash or sh)
 		if (fs.existsSync(claudePath)) {
 			const content = fs.readFileSync(claudePath, 'utf-8');
-			if (content.startsWith('#!/bin/bash')) {
-				// Parse bash wrapper to find actual executable
-				const execMatch = content.match(/exec\s+"([^"]+)"/);
+			if (content.startsWith('#!/bin/bash') || content.startsWith('#!/bin/sh')) {
+				// Parse shell wrapper to find actual executable
+				// Handle npm-style wrappers like: exec "$basedir/node" "$basedir/node_modules/@anthropic-ai/claude-code/cli.js" "$@"
+				const execMatch = content.match(/exec\s+(?:"[^"]*node"|node)\s+"([^"]+)"/);
 				if (execMatch && execMatch[1]) {
-					const actualPath = execMatch[1];
-					// Resolve any symlinks to get the final JS file
+					let actualPath = execMatch[1];
+					// Replace $basedir with the directory containing the wrapper
+					if (actualPath.includes('$basedir')) {
+						const wrapperDir = path.dirname(claudePath);
+						actualPath = actualPath.replace(/\$basedir/g, wrapperDir);
+					}
+					// Convert path separators for Windows
+					if (process.platform === 'win32') {
+						actualPath = actualPath.replace(/\//g, '\\');
+					}
+					return resolveToJsFile(actualPath);
+				}
+				
+				// Fallback: look for simple exec patterns
+				const simpleExecMatch = content.match(/exec\s+"([^"]+)"/);
+				if (simpleExecMatch && simpleExecMatch[1]) {
+					const actualPath = simpleExecMatch[1];
 					return resolveToJsFile(actualPath);
 				}
 			}
